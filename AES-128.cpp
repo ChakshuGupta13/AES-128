@@ -5,6 +5,7 @@
 #include <vector>
 #include <cctype>
 #include <algorithm>
+#include <iomanip>
 
 #define NIBBLE_SIZE_in_BITS 4
 #define BYTE_SIZE_in_BITS 8
@@ -12,10 +13,9 @@
 #define WORD_SIZE_in_BITS 32
 #define WORD_SIZE_in_NIBBLE WORD_SIZE_in_BITS / NIBBLE_SIZE_in_BITS
 #define WORD_SIZE_in_BYTES WORD_SIZE_in_BITS / BYTE_SIZE_in_BITS
-#define KEY_SIZE_in_BITS 128
-#define KEY_SIZE_in_NIBBLE KEY_SIZE_in_BITS / NIBBLE_SIZE_in_BITS
-#define KEY_SIZE_in_WORDS KEY_SIZE_in_BITS / WORD_SIZE_in_BITS
-#define HASH_SIZE_in_BITS 128
+#define BLOCK_SIZE_in_BITS 128
+#define BLOCK_SIZE_in_NIBBLE BLOCK_SIZE_in_BITS / NIBBLE_SIZE_in_BITS
+#define BLOCK_SIZE_in_WORDS BLOCK_SIZE_in_BITS / WORD_SIZE_in_BITS
 
 using namespace std;
 
@@ -43,23 +43,16 @@ struct BYTE
     BYTE(string b)
     {
         for (unsigned i = 0; i < BYTE_SIZE_in_NIBBLE; i++)
-        {
             N.push_back(HEX_to_NIBBLE[(char)(isalpha(b[i]) ? toupper(b[i]) : b[i])]);
-        }
     }
     BYTE()
     {
         string zero;
         for (unsigned i = 0; i < BYTE_SIZE_in_NIBBLE; i++)
-        {
             zero += "0";
-        }
         this->N = BYTE(zero).N;
     }
-    BYTE(vector<NIB> N)
-    {
-        this->N = N;
-    }
+    BYTE(vector<NIB> N) { this->N = N; }
     BYTE(unsigned long num)
     {
         bitset<BYTE_SIZE_in_BITS> B(num);
@@ -72,17 +65,13 @@ struct BYTE
     {
         BYTE ans;
         for (unsigned i = 0; i < BYTE_SIZE_in_NIBBLE; i++)
-        {
             ans.N[i] = this->N[i] ^ B.N[i];
-        }
         return ans;
     }
     void print()
     {
         for (auto n : N)
-        {
             cout << hex << uppercase << n.to_ullong();
-        }
     }
     unsigned char get_value()
     {
@@ -390,38 +379,33 @@ struct WORD
     WORD(string word)
     {
         for (unsigned i = 0; i < WORD_SIZE_in_BYTES; i++)
-        {
             B.push_back(BYTE(word.substr(i * BYTE_SIZE_in_NIBBLE, BYTE_SIZE_in_NIBBLE)));
-        }
     }
     WORD()
     {
         string zero;
         for (unsigned i = 0; i < WORD_SIZE_in_NIBBLE; i++)
-        {
             zero += "0";
-        }
         this->B = WORD(zero).B;
     }
-    WORD(vector<BYTE> B)
-    {
-        this->B = B;
-    }
+    WORD(vector<BYTE> B) { this->B = B; }
     WORD word_xor(WORD W)
     {
         WORD ans;
         for (unsigned i = 0; i < WORD_SIZE_in_BYTES; i++)
-        {
             ans.B[i] = this->B[i].byte_xor(W.B[i]);
-        }
         return ans;
     }
     void print()
     {
-        for (auto b : B)
+        cout << "[";
+        for (unsigned i = 0; i < WORD_SIZE_in_BYTES; i++)
         {
-            b.print();
+            B[i].print();
+            if (i + 1 != WORD_SIZE_in_BYTES)
+                cout << " ";
         }
+        cout << "]";
     }
 };
 
@@ -434,9 +418,7 @@ WORD left_rotate(WORD word, unsigned num_rotations = 1)
 WORD substitute(WORD word)
 {
     for (auto &b : word.B)
-    {
         b = AES_S_BOX[b.N[0].to_ulong()][b.N[1].to_ulong()];
-    }
     return word;
 }
 
@@ -445,32 +427,23 @@ struct BLOCK
     vector<WORD> W;
     BLOCK(string block)
     {
-        for (unsigned i = 0; i < KEY_SIZE_in_WORDS; i++)
-        {
+        for (unsigned i = 0; i < BLOCK_SIZE_in_WORDS; i++)
             W.push_back(WORD(block.substr(i * WORD_SIZE_in_NIBBLE, WORD_SIZE_in_NIBBLE)));
-        }
     }
     BLOCK()
     {
         string zero;
-        for (unsigned i = 0; i < KEY_SIZE_in_NIBBLE; i++)
-        {
+        for (unsigned i = 0; i < BLOCK_SIZE_in_NIBBLE; i++)
             zero += "0";
-        }
         this->W = BLOCK(zero).W;
     }
-    BLOCK(vector<WORD> W)
-    {
-        this->W = W;
-    }
+    BLOCK(vector<WORD> W) { this->W = W; }
     BLOCK block_xor(BLOCK block)
     {
         BLOCK ans;
         ans.W = this->W;
-        for (unsigned i = 0; i < KEY_SIZE_in_WORDS; i++)
-        {
+        for (unsigned i = 0; i < BLOCK_SIZE_in_WORDS; i++)
             ans.W[i] = ans.W[i].word_xor(block.W[i]);
-        }
         return ans;
     }
     void print()
@@ -486,9 +459,7 @@ struct BLOCK
 BLOCK substitute(BLOCK block)
 {
     for (auto &w : block.W)
-    {
         w = substitute(w);
-    }
     return block;
 }
 
@@ -508,14 +479,23 @@ map<int, string> RC({
 
 vector<BLOCK> AES_key_schedule(BLOCK K)
 {
+    cout << "----------------\nAES-Key Schedule\n----------------\n\n";
+    cout << "AES-128 Key: \nK = ";
+    K.print();
+    cout << "\n\n";
+
     map<int, WORD> RCON;
     for (unsigned i = 1; i <= 10; i++)
-    {
         RCON[i] = WORD(vector<BYTE>{BYTE(RC[i]), BYTE(), BYTE(), BYTE()});
-    }
 
     vector<BLOCK> expanded_key(NUM_ROUNDS + 1);
     expanded_key[0] = K;
+
+    cout << "AES-128 Expanded Key Calculation: \n";
+    cout << "W[00] = ";
+    expanded_key[0].print();
+    cout << "\n";
+
     for (unsigned i = 1; i <= NUM_ROUNDS; i++)
     {
         expanded_key[i] = BLOCK();
@@ -523,6 +503,45 @@ vector<BLOCK> AES_key_schedule(BLOCK K)
         expanded_key[i].W[1] = expanded_key[i - 1].W[1].word_xor(expanded_key[i].W[0]);
         expanded_key[i].W[2] = expanded_key[i - 1].W[2].word_xor(expanded_key[i].W[1]);
         expanded_key[i].W[3] = expanded_key[i - 1].W[3].word_xor(expanded_key[i].W[2]);
+
+        cout << "--------\nRound " << setfill('0') << setw(2) << dec << i << "\n--------\n";
+        cout << "RCON[" << setfill('0') << setw(2) << dec << i << "] = ";
+        RCON[i].print();
+        cout << "\n";
+        cout << "W[" << setfill('0') << setw(2) << i - 1 << "][0] = ";
+        expanded_key[i - 1].W[0].print();
+        cout << "\n";
+        cout << "W[" << setfill('0') << setw(2) << i - 1 << "][3] = ";
+        expanded_key[i - 1].W[3].print();
+        cout << "\n";
+        cout << "LEFT_ROTATE(W[" << setfill('0') << setw(2) << i - 1 << "][3]) = ";
+        left_rotate(expanded_key[i - 1].W[0]).print();
+        cout << "\n";
+        cout << "AES_S-BOX(LEFT_ROTATE(W[" << setfill('0') << setw(2) << i - 1 << "][3])) = ";
+        substitute(left_rotate(expanded_key[i - 1].W[0])).print();
+        cout << "\n";
+        cout << "\nW[" << setfill('0') << setw(2) << dec << i << "][0] = RCON[" << setfill('0') << setw(2) << dec << i << "] XOR W[" << setfill('0') << setw(2) << i - 1 << "][0] XOR AES_S-BOX(LEFT_ROTATE(W[" << setfill('0') << setw(2) << i - 1 << "][3])) = ";
+        expanded_key[i].W[0].print();
+        cout << "\n";
+        cout << "W[" << setfill('0') << setw(2) << dec << i << "][1] = W[" << setfill('0') << setw(2) << i - 1 << "][1] XOR W[" << setfill('0') << setw(2) << i - 1 << "][0] =  ";
+        expanded_key[i].W[1].print();
+        cout << "\n";
+        cout << "W[" << setfill('0') << setw(2) << dec << i << "][2] = W[" << setfill('0') << setw(2) << i - 1 << "][2] XOR W[" << setfill('0') << setw(2) << i - 1 << "][1] =  ";
+        expanded_key[i].W[2].print();
+        cout << "\n";
+        cout << "W[" << setfill('0') << setw(2) << dec << i << "][3] = W[" << setfill('0') << setw(2) << i - 1 << "][3] XOR W[" << setfill('0') << setw(2) << i - 1 << "][2] =  ";
+        expanded_key[i].W[3].print();
+        cout << "\n";
+        cout << "\nW[" << setfill('0') << setw(2) << dec << i << "] = ";
+        expanded_key[i].print();
+        cout << "\n";
+    }
+
+    cout << "\nAES-128 Expanded Key: \n";
+    for (auto W : expanded_key)
+    {
+        W.print();
+        cout << "\n";
     }
 
     return expanded_key;
@@ -550,7 +569,7 @@ BLOCK shift_rows(BLOCK M)
 
 BLOCK mix_col(BLOCK M)
 {
-    for (unsigned i = 0; i < KEY_SIZE_in_WORDS; i++)
+    for (unsigned i = 0; i < BLOCK_SIZE_in_WORDS; i++)
     {
         vector<unsigned char> a(4), b(4), r(4);
         for (unsigned j = 0; j < WORD_SIZE_in_BYTES; j++)
@@ -572,27 +591,42 @@ BLOCK mix_col(BLOCK M)
 BLOCK AES(BLOCK M, BLOCK K)
 {
     vector<BLOCK> W = AES_key_schedule(K);
+
+    cout << "-------\nAES-128\n-------\n";
+    cout << "Message: \nM = "; M.print(); cout << "\n";
+
     M = M.block_xor(W[0]);
+
+    cout << "--------\nRound 00\n--------\n";
+    cout << "Hash = M XOR W[0] = "; M.print(); cout << "\n";
+
     for (unsigned round = 1; round <= NUM_ROUNDS; round++)
     {
+        cout << "--------\nRound " << setfill('0') << setw(2) << dec << round << "\n--------\n";
         M = substitute(M);
+        cout << "Hash = AES_S-BOX(Hash) = "; M.print(); cout << "\n";
         M = shift_rows(M);
+        cout << "Hash = ShiftRows(Hash) = "; M.print(); cout << "\n";
         if (round < NUM_ROUNDS)
+        {
             M = mix_col(M);
+            cout << "Hash = MixColumns(Hash) = "; M.print(); cout << "\n";
+        }
         M = M.block_xor(W[round]);
+        cout << "Hash = Hash XOR W[" << setfill('0') << setw(2) << dec << round << "] = "; M.print(); cout << "\n";
     }
-
-    return BLOCK();
+    cout << "\nMessage AES-128 Encryption: \nE = "; M.print(); cout << "\n";
+    return M;
 }
 
 int main()
 {
     // [Assumption] Input message will be of 128-bits exactly. Therefore, no padding will be needed.
     string key, msg;
-    cin >> key >> msg;
+    cout << "AES-128 Key: "; cin >> key;
+    cout << "128-bit Message: "; cin >> msg;
 
     BLOCK K(key);
     BLOCK M(msg);
-
-    BLOCK hash = AES(M, K);
+    AES(M, K);
 }
