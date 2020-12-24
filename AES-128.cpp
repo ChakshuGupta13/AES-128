@@ -593,40 +593,63 @@ BLOCK AES(BLOCK M, BLOCK K)
     vector<BLOCK> W = AES_key_schedule(K);
 
     cout << "-------\nAES-128\n-------\n";
-    cout << "Message: \nM = "; M.print(); cout << "\n";
+    cout << "Message: \nM = ";
+    M.print();
+    cout << "\n";
 
     M = M.block_xor(W[0]);
 
     cout << "--------\nRound 00\n--------\n";
-    cout << "Hash = M XOR W[0] = "; M.print(); cout << "\n";
+    cout << "Hash = M XOR W[0] = ";
+    M.print();
+    cout << "\n";
 
     for (unsigned round = 1; round <= NUM_ROUNDS; round++)
     {
-        cout << "--------\nRound " << setfill('0') << setw(2) << dec << round << "\n--------\n";
         M = substitute(M);
-        cout << "Hash = AES_S-BOX(Hash) = "; M.print(); cout << "\n";
+
+        cout << "--------\nRound " << setfill('0') << setw(2) << dec << round << "\n--------\n";
+        cout << "Hash = AES_S-BOX(Hash) = ";
+        M.print();
+        cout << "\n";
+        
         M = shift_rows(M);
-        cout << "Hash = ShiftRows(Hash) = "; M.print(); cout << "\n";
+        
+        cout << "Hash = ShiftRows(Hash) = ";
+        M.print();
+        cout << "\n";
+        
         if (round < NUM_ROUNDS)
         {
             M = mix_col(M);
-            cout << "Hash = MixColumns(Hash) = "; M.print(); cout << "\n";
+        
+            cout << "Hash = MixColumns(Hash) = ";
+            M.print();
+            cout << "\n";
         }
         M = M.block_xor(W[round]);
-        cout << "Hash = Hash XOR W[" << setfill('0') << setw(2) << dec << round << "] = "; M.print(); cout << "\n";
+        
+        cout << "Hash = Hash XOR W[" << setfill('0') << setw(2) << dec << round << "] = ";
+        M.print();
+        cout << "\n";
     }
-    cout << "\nMessage AES-128 Encryption: \nE = "; M.print(); cout << "\n";
+    
+    cout << "\nMessage AES-128 Encryption: \nE = ";
+    M.print();
+    cout << "\n";
+    
     return M;
 }
 
 int main()
 {
-    // [Assumption] Input message will be of 128-bits exactly. Therefore, no padding will be needed.
+    /* [Assumption] Input message will be of 128-bits exactly. Therefore, no padding will be needed. */
     string key, msg;
-    cout << "AES-128 Key: "; cin >> key;
-    cout << "128-bit Message: "; cin >> msg;
+    
+    cout << "AES-128 Key: ";
+    cin >> key;
+    cout << "128-bit Message: ";
+    cin >> msg;
 
-    BLOCK K(key);
-    BLOCK M(msg);
-    AES(M, K);
+    AES(BLOCK(msg), BLOCK(key));
 }
