@@ -446,13 +446,15 @@ struct BLOCK
             ans.W[i] = ans.W[i].word_xor(block.W[i]);
         return ans;
     }
-    void print()
+    void print(bool in_matrix = true)
     {
         for (auto word : W)
         {
             word.print();
-            cout << " ";
+            cout << ((in_matrix)?"\n":" ");
         }
+        if (!in_matrix)
+            cout << "\n";
     }
 };
 
@@ -477,12 +479,15 @@ map<int, string> RC({
     {10, "36"},
 });
 
-vector<BLOCK> AES_key_schedule(BLOCK K)
+vector<BLOCK> AES_key_schedule(BLOCK K, bool show_key_expansion)
 {
-    cout << "----------------\nAES-Key Schedule\n----------------\n\n";
-    cout << "AES-128 Key: \nK = ";
-    K.print();
-    cout << "\n\n";
+    if (show_key_expansion)
+    {
+        cout << "\n----------------\nAES-Key Schedule\n----------------\n\n";
+        cout << "AES-128 Key (K):\n";
+        K.print();
+        cout << "\n";
+    }
 
     map<int, WORD> RCON;
     for (unsigned i = 1; i <= 10; i++)
@@ -491,10 +496,12 @@ vector<BLOCK> AES_key_schedule(BLOCK K)
     vector<BLOCK> expanded_key(NUM_ROUNDS + 1);
     expanded_key[0] = K;
 
-    cout << "AES-128 Expanded Key Calculation: \n";
-    cout << "W[00] = ";
-    expanded_key[0].print();
-    cout << "\n";
+    if (show_key_expansion)
+    {
+        cout << "---------------------------------\nAES-128 Expanded Key Calculation\n---------------------------------\n";
+        cout << "W[00]:\n";
+        expanded_key[0].print();
+    }
 
     for (unsigned i = 1; i <= NUM_ROUNDS; i++)
     {
@@ -504,45 +511,44 @@ vector<BLOCK> AES_key_schedule(BLOCK K)
         expanded_key[i].W[2] = expanded_key[i - 1].W[2].word_xor(expanded_key[i].W[1]);
         expanded_key[i].W[3] = expanded_key[i - 1].W[3].word_xor(expanded_key[i].W[2]);
 
-        cout << "--------\nRound " << setfill('0') << setw(2) << dec << i << "\n--------\n";
-        cout << "RCON[" << setfill('0') << setw(2) << dec << i << "] = ";
-        RCON[i].print();
-        cout << "\n";
-        cout << "W[" << setfill('0') << setw(2) << i - 1 << "][0] = ";
-        expanded_key[i - 1].W[0].print();
-        cout << "\n";
-        cout << "W[" << setfill('0') << setw(2) << i - 1 << "][3] = ";
-        expanded_key[i - 1].W[3].print();
-        cout << "\n";
-        cout << "LEFT_ROTATE(W[" << setfill('0') << setw(2) << i - 1 << "][3]) = ";
-        left_rotate(expanded_key[i - 1].W[0]).print();
-        cout << "\n";
-        cout << "AES_S-BOX(LEFT_ROTATE(W[" << setfill('0') << setw(2) << i - 1 << "][3])) = ";
-        substitute(left_rotate(expanded_key[i - 1].W[0])).print();
-        cout << "\n";
-        cout << "\nW[" << setfill('0') << setw(2) << dec << i << "][0] = RCON[" << setfill('0') << setw(2) << dec << i << "] XOR W[" << setfill('0') << setw(2) << i - 1 << "][0] XOR AES_S-BOX(LEFT_ROTATE(W[" << setfill('0') << setw(2) << i - 1 << "][3])) = ";
-        expanded_key[i].W[0].print();
-        cout << "\n";
-        cout << "W[" << setfill('0') << setw(2) << dec << i << "][1] = W[" << setfill('0') << setw(2) << i - 1 << "][1] XOR W[" << setfill('0') << setw(2) << i - 1 << "][0] =  ";
-        expanded_key[i].W[1].print();
-        cout << "\n";
-        cout << "W[" << setfill('0') << setw(2) << dec << i << "][2] = W[" << setfill('0') << setw(2) << i - 1 << "][2] XOR W[" << setfill('0') << setw(2) << i - 1 << "][1] =  ";
-        expanded_key[i].W[2].print();
-        cout << "\n";
-        cout << "W[" << setfill('0') << setw(2) << dec << i << "][3] = W[" << setfill('0') << setw(2) << i - 1 << "][3] XOR W[" << setfill('0') << setw(2) << i - 1 << "][2] =  ";
-        expanded_key[i].W[3].print();
-        cout << "\n";
-        cout << "\nW[" << setfill('0') << setw(2) << dec << i << "] = ";
-        expanded_key[i].print();
-        cout << "\n";
+        if (show_key_expansion)
+        {
+            cout << "--------\nRound " << setfill('0') << setw(2) << dec << i << "\n--------\n";
+            cout << "RCON[" << setfill('0') << setw(2) << dec << i << "]: ";
+            RCON[i].print();
+            cout << "\n";
+            cout << "W[" << setfill('0') << setw(2) << i - 1 << "][0]: ";
+            expanded_key[i - 1].W[0].print();
+            cout << "\n";
+            cout << "W[" << setfill('0') << setw(2) << i - 1 << "][3]: ";
+            expanded_key[i - 1].W[3].print();
+            cout << "\n";
+            cout << "LEFT_ROTATE(W[" << setfill('0') << setw(2) << i - 1 << "][3]): ";
+            left_rotate(expanded_key[i - 1].W[0]).print();
+            cout << "\n";
+            cout << "AES_S-BOX(LEFT_ROTATE(W[" << setfill('0') << setw(2) << i - 1 << "][3])): ";
+            substitute(left_rotate(expanded_key[i - 1].W[0])).print();
+            cout << "\n";
+            cout << "\nW[" << setfill('0') << setw(2) << dec << i << "][0] = RCON[" << setfill('0') << setw(2) << dec << i << "] XOR W[" << setfill('0') << setw(2) << i - 1 << "][0] XOR AES_S-BOX(LEFT_ROTATE(W[" << setfill('0') << setw(2) << i - 1 << "][3])): ";
+            expanded_key[i].W[0].print();
+            cout << "\n";
+            cout << "W[" << setfill('0') << setw(2) << dec << i << "][1] = W[" << setfill('0') << setw(2) << i - 1 << "][1] XOR W[" << setfill('0') << setw(2) << i - 1 << "][0] =  ";
+            expanded_key[i].W[1].print();
+            cout << "\n";
+            cout << "W[" << setfill('0') << setw(2) << dec << i << "][2] = W[" << setfill('0') << setw(2) << i - 1 << "][2] XOR W[" << setfill('0') << setw(2) << i - 1 << "][1] =  ";
+            expanded_key[i].W[2].print();
+            cout << "\n";
+            cout << "W[" << setfill('0') << setw(2) << dec << i << "][3] = W[" << setfill('0') << setw(2) << i - 1 << "][3] XOR W[" << setfill('0') << setw(2) << i - 1 << "][2] =  ";
+            expanded_key[i].W[3].print();
+            cout << "\n";
+            cout << "\nW[" << setfill('0') << setw(2) << dec << i << "]:\n";
+            expanded_key[i].print();
+        }
     }
 
     cout << "\nAES-128 Expanded Key: \n";
     for (auto W : expanded_key)
-    {
-        W.print();
-        cout << "\n";
-    }
+        W.print(false);
 
     return expanded_key;
 }
@@ -588,56 +594,49 @@ BLOCK mix_col(BLOCK M)
     return M;
 }
 
-BLOCK AES(BLOCK M, BLOCK K)
+BLOCK AES(BLOCK M, BLOCK K, bool show_key_expansion)
 {
-    vector<BLOCK> W = AES_key_schedule(K);
+    vector<BLOCK> W = AES_key_schedule(K, show_key_expansion);
 
     cout << "-------\nAES-128\n-------\n";
-    cout << "Message: \nM = ";
+    cout << "Message: \nM:\n";
     M.print();
-    cout << "\n";
 
     M = M.block_xor(W[0]);
 
     cout << "--------\nRound 00\n--------\n";
-    cout << "Hash = M XOR W[0] = ";
+    cout << "Hash = M XOR W[0]:\n";
     M.print();
-    cout << "\n";
 
     for (unsigned round = 1; round <= NUM_ROUNDS; round++)
     {
         M = substitute(M);
 
         cout << "--------\nRound " << setfill('0') << setw(2) << dec << round << "\n--------\n";
-        cout << "Hash = AES_S-BOX(Hash) = ";
+        cout << "Hash = AES_S-BOX(Hash):\n";
         M.print();
-        cout << "\n";
-        
+
         M = shift_rows(M);
-        
-        cout << "Hash = ShiftRows(Hash) = ";
+
+        cout << "Hash = ShiftRows(Hash):\n";
         M.print();
-        cout << "\n";
-        
+
         if (round < NUM_ROUNDS)
         {
             M = mix_col(M);
-        
-            cout << "Hash = MixColumns(Hash) = ";
+
+            cout << "Hash = MixColumns(Hash):\n";
             M.print();
-            cout << "\n";
         }
         M = M.block_xor(W[round]);
-        
-        cout << "Hash = Hash XOR W[" << setfill('0') << setw(2) << dec << round << "] = ";
+
+        cout << "Hash = Hash XOR W[" << setfill('0') << setw(2) << dec << round << "]:\n";
         M.print();
-        cout << "\n";
     }
-    
-    cout << "\nMessage AES-128 Encryption: \nE = ";
+
+    cout << "\nMessage AES-128 Encryption: \n";
     M.print();
-    cout << "\n";
-    
+
     return M;
 }
 
@@ -645,11 +644,14 @@ int main()
 {
     /* [Assumption] Input message will be of 128-bits exactly. Therefore, no padding will be needed. */
     string key, msg;
-    
+    char show_key_expansion = 'N';
+
     cout << "AES-128 Key: ";
     cin >> key;
     cout << "128-bit Message: ";
     cin >> msg;
+    cout << "Show AES-128 Expanded Key Calculation? (Y/N): ";
+    cin >> show_key_expansion;
 
-    AES(BLOCK(msg), BLOCK(key));
+    AES(BLOCK(msg), BLOCK(key), ((show_key_expansion == 'Y') ? true : false));
 }
